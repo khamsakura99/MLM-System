@@ -184,3 +184,54 @@ export interface Announcement {
   summaryTh: string;
   isImportant?: boolean;
 }
+
+export type UserRole = 'member' | 'admin';
+
+export type AdminTab = 
+  | 'admin_dashboard'
+  | 'admin_members'
+  | 'admin_orders'
+  | 'admin_commissions'
+  | 'admin_withdrawals'
+  | 'admin_products'
+  | 'admin_settings';
+
+export interface WithdrawalRequest {
+  id: string;
+  memberCode: string;
+  memberName: string;
+  amount: number;
+  fee: number;
+  netAmount: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  requestDate: string;
+  status: 'pending' | 'approved' | 'rejected';
+  processedDate?: string;
+  rejectionReason?: string;
+}
+
+export interface CompensationSettings {
+  fastStartRate: number; // percentage e.g. 150%
+  binaryPairingRate: number; // percentage e.g. 30%
+  maxDailyCapDiamond: number; // e.g. 80000
+  maxDailyCapGold: number; // e.g. 40000
+  matchingGenerations: number; // e.g. 5
+  autoshipMinPv: number; // e.g. 250
+  withholdingTaxRate: number; // e.g. 3%
+  bankTransferFee: number; // e.g. 30
+}
+
+export interface SystemBranding {
+  companyName: string;
+  companyNameTh: string;
+  portalTitle: string;
+  portalTitleTh: string;
+  shortCode: string;
+  domainName: string;
+  logoType: 'text' | 'image';
+  logoUrl?: string;
+  themeColor: 'blue' | 'indigo' | 'emerald' | 'amber' | 'purple';
+}
+

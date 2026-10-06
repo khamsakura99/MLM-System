@@ -34,7 +34,9 @@ export const Header: React.FC<HeaderProps> = ({
     cart, 
     announcements,
     setActiveTab,
-    logout
+    logout,
+    switchRole,
+    systemBranding
   } = useMlm();
 
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
@@ -74,15 +76,23 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-lg shadow-md tracking-wider">
-                OMC
-              </div>
+              {systemBranding.logoType === 'image' && systemBranding.logoUrl ? (
+                <img
+                  src={systemBranding.logoUrl}
+                  alt={systemBranding.companyName}
+                  className="w-9 h-9 rounded-lg object-contain bg-slate-800 p-0.5 border border-slate-700 shadow-md"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-base shadow-md tracking-wider">
+                  {systemBranding.shortCode || 'OMC'}
+                </div>
+              )}
               <div className="flex flex-col">
                 <span className="font-bold text-base tracking-tight text-white leading-tight">
-                  OMC Member BackOffice
+                  {language === 'th' ? systemBranding.portalTitleTh : systemBranding.portalTitle}
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono leading-none">
-                  demomlm.omc.co.th
+                  {systemBranding.domainName}
                 </span>
               </div>
             </div>
@@ -274,10 +284,21 @@ export const Header: React.FC<HeaderProps> = ({
                         setActiveTab('profile_kyc');
                         setShowMemberDropdown(false);
                       }}
-                      className="w-full text-left p-2 rounded hover:bg-slate-50 text-slate-700 flex items-center gap-2"
+                      className="w-full text-left p-2 rounded hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer"
                     >
                       <UserCheck className="w-3.5 h-3.5 text-blue-600" />
                       <span>{language === 'th' ? 'จัดการข้อมูลส่วนตัว & KYC' : 'Profile & KYC'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowMemberDropdown(false);
+                        switchRole('admin');
+                      }}
+                      className="w-full text-left p-2 rounded hover:bg-purple-50 text-purple-700 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                      <span className="font-semibold">{language === 'th' ? 'แผงควบคุมผู้ดูแล (Admin Console)' : 'Switch to Admin Console'}</span>
                     </button>
 
                     <button
@@ -294,6 +315,16 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Quick Admin Shortcut Button */}
+            <button
+              onClick={() => switchRole('admin')}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-950/80 hover:bg-purple-900 border border-purple-700/60 text-purple-200 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+              title={language === 'th' ? 'สลับเข้าสู่โหมดผู้ดูแลระบบ Admin Console' : 'Switch to Admin Console'}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+              <span>Admin</span>
+            </button>
 
             {/* Quick Logout Header Icon Button */}
             <button

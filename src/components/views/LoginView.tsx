@@ -16,8 +16,9 @@ import { useMlm } from '../../context/MlmContext';
 import { ALTERNATIVE_MEMBERS } from '../../data/mockMlmData';
 
 export const LoginView: React.FC = () => {
-  const { language, setLanguage, login, showToast } = useMlm();
+  const { language, setLanguage, login, showToast, systemBranding } = useMlm();
 
+  const [loginMode, setLoginMode] = useState<'member' | 'admin'>('member');
   const [memberCode, setMemberCode] = useState('TH889214');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +35,18 @@ export const LoginView: React.FC = () => {
     setCaptchaInput(code); // convenient auto-match for demo
   };
 
+  const handleSelectMode = (mode: 'member' | 'admin') => {
+    setLoginMode(mode);
+    setErrorMessage('');
+    if (mode === 'admin') {
+      setMemberCode('admin');
+      setPassword('admin123');
+    } else {
+      setMemberCode('TH889214');
+      setPassword('123456');
+    }
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -45,7 +58,7 @@ export const LoginView: React.FC = () => {
 
     setIsLoading(true);
     setTimeout(() => {
-      const res = login(memberCode, password);
+      const res = login(memberCode, password, loginMode === 'admin');
       setIsLoading(false);
       if (!res.success) {
         setErrorMessage(res.message);
@@ -53,12 +66,12 @@ export const LoginView: React.FC = () => {
     }, 400);
   };
 
-  const handleQuickLogin = (code: string) => {
+  const handleQuickLogin = (code: string, asAdmin = false) => {
     setMemberCode(code);
-    setPassword('123456');
+    setPassword(asAdmin ? 'admin123' : '123456');
     setCaptchaInput(captchaCode);
     setErrorMessage('');
-    login(code, '123456');
+    login(code, asAdmin ? 'admin123' : '123456', asAdmin);
   };
 
   return (
@@ -70,15 +83,23 @@ export const LoginView: React.FC = () => {
       {/* Top Bar with Brand & Language Toggle */}
       <header className="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 flex items-center justify-between border-b border-slate-800/80">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-lg shadow-md tracking-wider">
-            OMC
-          </div>
+          {systemBranding.logoType === 'image' && systemBranding.logoUrl ? (
+            <img
+              src={systemBranding.logoUrl}
+              alt={systemBranding.companyName}
+              className="w-9 h-9 rounded-lg object-contain bg-slate-800 p-0.5 border border-slate-700 shadow-md"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-base shadow-md tracking-wider">
+              {systemBranding.shortCode || 'OMC'}
+            </div>
+          )}
           <div>
             <h1 className="font-bold text-base tracking-tight text-white leading-tight">
-              OMC Member Portal
+              {language === 'th' ? systemBranding.portalTitleTh : systemBranding.portalTitle}
             </h1>
             <p className="text-[11px] text-slate-400 font-mono leading-none">
-              demomlm.omc.co.th/member
+              {systemBranding.domainName}/member
             </p>
           </div>
         </div>
@@ -114,19 +135,59 @@ export const LoginView: React.FC = () => {
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
         <div className="w-full max-w-md bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden">
           
-          {/* Card Top Banner */}
-          <div className="p-6 pb-5 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 text-center">
-            <div className="w-12 h-12 bg-blue-600 text-white font-bold text-xl rounded-xl mx-auto flex items-center justify-center mb-3 shadow-md">
-              OMC
-            </div>
+          {/* Card Top Banner with Mode Selector */}
+          <div className="p-6 pb-4 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100 text-center">
+            {loginMode === 'admin' ? (
+              <div className="w-12 h-12 text-white font-bold text-xl rounded-xl mx-auto flex items-center justify-center mb-3 shadow-md bg-gradient-to-br from-indigo-600 to-purple-700">
+                ADM
+              </div>
+            ) : systemBranding.logoType === 'image' && systemBranding.logoUrl ? (
+              <img
+                src={systemBranding.logoUrl}
+                alt={systemBranding.companyName}
+                className="w-14 h-14 object-contain rounded-xl mx-auto mb-3 p-1 bg-white border border-slate-200 shadow-md"
+              />
+            ) : (
+              <div className="w-12 h-12 text-white font-bold text-lg rounded-xl mx-auto flex items-center justify-center mb-3 shadow-md bg-blue-600">
+                {systemBranding.shortCode || 'OMC'}
+              </div>
+            )}
             <h2 className="text-lg font-bold text-slate-900">
-              {language === 'th' ? 'เข้าสู่ระบบสมาชิกนักธุรกิจ' : 'Member BackOffice Login'}
+              {loginMode === 'admin'
+                ? (language === 'th' ? 'เข้าสู่ระบบผู้ดูแลระบบ (Admin Control)' : 'Administrator Console Sign In')
+                : (language === 'th' ? `เข้าสู่ระบบสมาชิก ${systemBranding.companyName}` : `${systemBranding.companyName} Member Portal`)}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              {language === 'th' 
-                ? 'ระบบบริหารจัดการสมาชิกและผังองค์กรเครือข่าย' 
-                : 'Multi-Level Marketing Network Management Portal'}
+              {loginMode === 'admin'
+                ? (language === 'th' ? 'แผงควบคุมระบบบริหารขายตรงส่วนกลาง' : 'Central MLM Corporate Management Console')
+                : (language === 'th' ? 'ระบบบริหารจัดการสมาชิกและผังองค์กรเครือข่าย' : 'Multi-Level Marketing Network Management Portal')}
             </p>
+
+            {/* Mode Selector Tabs */}
+            <div className="mt-4 p-1 bg-slate-100 rounded-lg flex items-center text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => handleSelectMode('member')}
+                className={`flex-1 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  loginMode === 'member'
+                    ? 'bg-white text-blue-700 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {language === 'th' ? 'ระบบสมาชิก (Member)' : 'Member Portal'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectMode('admin')}
+                className={`flex-1 py-1.5 rounded-md transition-colors cursor-pointer ${
+                  loginMode === 'admin'
+                    ? 'bg-purple-700 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                {language === 'th' ? 'ผู้ดูแลระบบ (Admin)' : 'Admin Console'}
+              </button>
+            </div>
           </div>
 
           {/* Form */}
@@ -254,22 +315,36 @@ export const LoginView: React.FC = () => {
                 {language === 'th' ? '⚡ ทดสอบเข้าสู่ระบบทันที (1-Click Demo Accounts)' : '⚡ 1-Click Demo Test Accounts'}
               </span>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {ALTERNATIVE_MEMBERS.map((m) => (
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => handleQuickLogin(m.memberCode)}
-                    className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 text-center transition-colors group cursor-pointer"
+                    onClick={() => handleQuickLogin(m.memberCode, false)}
+                    className="p-1.5 rounded-lg bg-slate-50 hover:bg-blue-50 hover:border-blue-300 border border-slate-200 text-center transition-colors group cursor-pointer"
                   >
-                    <div className="font-mono font-bold text-slate-800 group-hover:text-blue-700 text-[11px]">
+                    <div className="font-mono font-bold text-slate-800 group-hover:text-blue-700 text-[10px]">
                       {m.memberCode}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-medium">
+                    <div className="text-[9px] text-slate-500 font-medium">
                       {m.rank}
                     </div>
                   </button>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('ADMIN', true)}
+                  className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 border border-purple-300 text-center transition-colors group cursor-pointer shadow-2xs"
+                  title="เข้าสู่ระบบผู้ดูแลระบบทันที"
+                >
+                  <div className="font-mono font-bold text-purple-800 text-[10px]">
+                    ADMIN
+                  </div>
+                  <div className="text-[9px] text-purple-600 font-bold">
+                    Superadmin
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -281,10 +356,10 @@ export const LoginView: React.FC = () => {
       {/* Footer */}
       <footer className="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 text-center text-[11px] text-slate-500 border-t border-slate-800/80 space-y-1">
         <p>
-          ระบบสมาชิกจำลองตามโครงสร้าง OMC MLM System · สงวนลิขสิทธิ์ บริษัท ออนไลน์ มาร์เก็ตติ้ง คอมมิวนิเคชั่น จำกัด
+          ระบบสมาชิกจำลองตามโครงสร้าง {systemBranding.companyName} · {systemBranding.companyNameTh}
         </p>
         <p className="font-mono text-[10px] text-slate-600">
-          demomlm.omc.co.th · SSL 256-Bit Encrypted Data Protection
+          {systemBranding.domainName} · SSL 256-Bit Encrypted Data Protection
         </p>
       </footer>
 

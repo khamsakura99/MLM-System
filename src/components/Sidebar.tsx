@@ -24,7 +24,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { language, activeTab, setActiveTab, currentMember, logout } = useMlm();
+  const { language, activeTab, setActiveTab, currentMember, logout, systemBranding } = useMlm();
 
   const navGroups: {
     titleTh: string;
@@ -160,7 +160,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
         {/* Mobile Header Close */}
         <div className="flex items-center justify-between p-4 border-b border-slate-800 lg:hidden">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white text-base">OMC Member Portal</span>
+            <span className="font-bold text-white text-base">
+              {language === 'th' ? systemBranding.portalTitleTh : systemBranding.portalTitle}
+            </span>
           </div>
           <button 
             type="button" 
@@ -259,7 +261,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           </button>
 
           <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
-            <span>OMC MLM v4.2 Demo</span>
+            <span>{systemBranding.shortCode || 'OMC'} MLM v4.2 Demo</span>
             <span className="text-emerald-400 font-medium">Online</span>
           </div>
         </div>

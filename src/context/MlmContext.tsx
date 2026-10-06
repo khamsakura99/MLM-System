@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   MemberProfile, 
   BinaryNode, 
@@ -9,7 +9,12 @@ import {
   CommissionCycle, 
   WalletTransaction, 
   Language, 
-  MemberRank 
+  MemberRank,
+  UserRole,
+  AdminTab,
+  WithdrawalRequest,
+  CompensationSettings,
+  SystemBranding
 } from '../types/mlm';
 import { 
   PRIMARY_MEMBER, 
@@ -20,7 +25,10 @@ import {
   INITIAL_ORDERS, 
   COMMISSION_CYCLES, 
   INITIAL_TRANSACTIONS, 
-  ANNOUNCEMENTS 
+  ANNOUNCEMENTS,
+  INITIAL_WITHDRAWAL_REQUESTS,
+  DEFAULT_COMPENSATION_SETTINGS,
+  DEFAULT_BRANDING
 } from '../data/mockMlmData';
 
 export type ActiveTab = 
@@ -85,8 +93,28 @@ interface MlmContextType {
   registrationPreFill: { uplineCode?: string; position?: 'L' | 'R' } | null;
   setRegistrationPreFill: (data: { uplineCode?: string; position?: 'L' | 'R' } | null) => void;
   isAuthenticated: boolean;
-  login: (memberCode: string, password?: string) => { success: boolean; message: string };
+  login: (memberCode: string, password?: string, asAdmin?: boolean) => { success: boolean; message: string };
   logout: () => void;
+  userRole: UserRole;
+  switchRole: (role: UserRole) => void;
+  adminTab: AdminTab;
+  setAdminTab: (tab: AdminTab) => void;
+  withdrawalRequests: WithdrawalRequest[];
+  approveWithdrawal: (id: string) => void;
+  rejectWithdrawal: (id: string, reason: string) => void;
+  compensationSettings: CompensationSettings;
+  updateCompensationSettings: (newSettings: Partial<CompensationSettings>) => void;
+  updateMemberRank: (memberCode: string, newRank: MemberRank) => void;
+  adjustMemberWallet: (memberCode: string, deltaAmount: number, reason: string) => void;
+  adjustMemberPv: (memberCode: string, pv: number) => void;
+  toggleMemberStatus: (memberCode: string) => void;
+  updateOrderStatus: (orderId: string, newStatus: 'paid' | 'shipping' | 'completed', trackingNo?: string) => void;
+  calculateNewCommissionCycle: () => void;
+  addProduct: (product: Omit<Product, 'id'>) => void;
+  updateProductStock: (productId: string, newStock: number) => void;
+  systemBranding: SystemBranding;
+  updateSystemBranding: (newBranding: Partial<SystemBranding>) => void;
+  resetSystemBranding: () => void;
 }
 
 const MlmContext = createContext<MlmContextType | undefined>(undefined);
@@ -94,17 +122,67 @@ const MlmContext = createContext<MlmContextType | undefined>(undefined);
 export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('th');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<UserRole>('member');
+  const [adminTab, setAdminTab] = useState<AdminTab>('admin_dashboard');
   const [currentMember, setCurrentMember] = useState<MemberProfile>(PRIMARY_MEMBER);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [binaryNodes, setBinaryNodes] = useState<Record<string, BinaryNode>>(INITIAL_BINARY_NODES);
   const [unilevelMembers, setUnilevelMembers] = useState<UnilevelMember[]>(INITIAL_UNILEVEL_MEMBERS);
-  const [products] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-  const [commissionCycles] = useState<CommissionCycle[]>(COMMISSION_CYCLES);
+  const [commissionCycles, setCommissionCycles] = useState<CommissionCycle[]>(COMMISSION_CYCLES);
   const [transactions, setTransactions] = useState<WalletTransaction[]>(INITIAL_TRANSACTIONS);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>(INITIAL_WITHDRAWAL_REQUESTS);
+  const [compensationSettings, setCompensationSettings] = useState<CompensationSettings>(DEFAULT_COMPENSATION_SETTINGS);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [registrationPreFill, setRegistrationPreFill] = useState<{ uplineCode?: string; position?: 'L' | 'R' } | null>(null);
+
+  // System Branding (Name, Logo, Domain) with local persistence
+  const [systemBranding, setSystemBranding] = useState<SystemBranding>(() => {
+    try {
+      const saved = localStorage.getItem('omc_system_branding');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return DEFAULT_BRANDING;
+  });
+
+  const updateSystemBranding = (newBranding: Partial<SystemBranding>) => {
+    setSystemBranding(prev => {
+      const updated = { ...prev, ...newBranding };
+      try {
+        localStorage.setItem('omc_system_branding', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+    showToast(
+      language === 'th' ? 'บันทึกข้อมูลชื่อและโลโก้เว็บไซต์เรียบร้อยแล้ว' : 'Website name and logo updated successfully',
+      'success'
+    );
+  };
+
+  const resetSystemBranding = () => {
+    setSystemBranding(DEFAULT_BRANDING);
+    try {
+      localStorage.removeItem('omc_system_branding');
+    } catch {
+      // ignore
+    }
+    showToast(
+      language === 'th' ? 'รีเซ็ตชื่อและโลโก้กลับสู่ค่าเริ่มต้นแล้ว' : 'Reset branding to defaults',
+      'info'
+    );
+  };
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = `${systemBranding.companyName} | ${language === 'th' ? systemBranding.portalTitleTh : systemBranding.portalTitle}`;
+    }
+  }, [systemBranding, language]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -114,7 +192,7 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 4000);
   };
 
-  const login = (memberCode: string, password = ''): { success: boolean; message: string } => {
+  const login = (memberCode: string, password = '', asAdmin = false): { success: boolean; message: string } => {
     const cleanCode = memberCode.trim().toUpperCase();
     if (!cleanCode) {
       return { 
@@ -122,6 +200,21 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         message: language === 'th' ? 'กรุณากรอกรหัสสมาชิก' : 'Please enter member code' 
       };
     }
+
+    if (asAdmin || cleanCode === 'ADMIN' || cleanCode === 'SUPERADMIN') {
+      setUserRole('admin');
+      setIsAuthenticated(true);
+      setAdminTab('admin_dashboard');
+      showToast(
+        language === 'th'
+          ? 'เข้าสู่ระบบผู้ดูแลระบบ (Admin Control Panel) สำเร็จ'
+          : 'Welcome to Administrator Control Panel',
+        'success'
+      );
+      return { success: true, message: 'Admin login successful' };
+    }
+
+    setUserRole('member');
 
     // Find in alternative members list
     const foundAlt = ALTERNATIVE_MEMBERS.find(m => m.memberCode.toUpperCase() === cleanCode);
@@ -197,6 +290,120 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       success: false,
       message: language === 'th' ? 'ไม่พบรหัสสมาชิกนี้ในระบบ' : 'Invalid member code'
     };
+  };
+
+  const switchRole = (role: UserRole) => {
+    setUserRole(role);
+    showToast(
+      language === 'th'
+        ? (role === 'admin' ? 'สลับเข้าสู่โหมดผู้ดูแลระบบ (Admin Console)' : 'สลับเข้าสู่ระบบสมาชิกนักธุรกิจ (Member Portal)')
+        : (role === 'admin' ? 'Switched to Administrator Console' : 'Switched to Member Portal'),
+      'info'
+    );
+  };
+
+  const approveWithdrawal = (id: string) => {
+    setWithdrawalRequests(prev => prev.map(w => w.id === id ? { ...w, status: 'approved', processedDate: new Date().toISOString().replace('T', ' ').substring(0, 16) } : w));
+    showToast(language === 'th' ? 'อนุมัติการถอนเงินเรียบร้อยแล้ว' : 'Withdrawal approved', 'success');
+  };
+
+  const rejectWithdrawal = (id: string, reason: string) => {
+    setWithdrawalRequests(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected', rejectionReason: reason } : w));
+    showToast(language === 'th' ? 'ปฏิเสธคำขอถอนเงินแล้ว' : 'Withdrawal rejected', 'info');
+  };
+
+  const updateCompensationSettings = (newSettings: Partial<CompensationSettings>) => {
+    setCompensationSettings(prev => ({ ...prev, ...newSettings }));
+    showToast(language === 'th' ? 'บันทึกการตั้งค่าแผนการจ่ายผลตอบแทนสำเร็จ' : 'Settings updated', 'success');
+  };
+
+  const updateMemberRank = (memberCode: string, newRank: MemberRank) => {
+    setBinaryNodes(prev => {
+      const node = prev[memberCode];
+      return node ? { ...prev, [memberCode]: { ...node, rank: newRank } } : prev;
+    });
+    if (currentMember.memberCode === memberCode) {
+      setCurrentMember(prev => ({ ...prev, rank: newRank }));
+    }
+    showToast(language === 'th' ? `ปรับตำแหน่งสมาชิก ${memberCode} เป็น ${newRank} แล้ว` : `Rank updated for ${memberCode}`, 'success');
+  };
+
+  const adjustMemberWallet = (memberCode: string, deltaAmount: number, reason: string) => {
+    if (currentMember.memberCode === memberCode) {
+      setCurrentMember(prev => ({ ...prev, walletBalance: prev.walletBalance + deltaAmount }));
+    }
+    const newTx: WalletTransaction = {
+      id: `tx_${Date.now()}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      type: deltaAmount >= 0 ? 'deposit' : 'withdraw',
+      amount: deltaAmount,
+      balanceAfter: (currentMember.memberCode === memberCode ? currentMember.walletBalance + deltaAmount : 50000),
+      description: `[Admin Adjustment] ${reason}`,
+      refCode: `ADM-${Date.now().toString().slice(-6)}`
+    };
+    setTransactions(prev => [newTx, ...prev]);
+    showToast(language === 'th' ? `ปรับยอดเงิน ${deltaAmount >= 0 ? '+' : ''}${deltaAmount.toLocaleString()} บ. สำเร็จ` : `Wallet adjusted`, 'success');
+  };
+
+  const adjustMemberPv = (memberCode: string, pv: number) => {
+    setBinaryNodes(prev => {
+      const node = prev[memberCode];
+      return node ? { ...prev, [memberCode]: { ...node, personalPv: node.personalPv + pv } } : prev;
+    });
+    if (currentMember.memberCode === memberCode) {
+      setCurrentMember(prev => ({ ...prev, personalPv: prev.personalPv + pv, accumulatedPv: prev.accumulatedPv + pv }));
+    }
+    showToast(language === 'th' ? `ปรับคะแนน PV +${pv.toLocaleString()} ให้กับ ${memberCode} แล้ว` : `PV adjusted`, 'success');
+  };
+
+  const toggleMemberStatus = (memberCode: string) => {
+    setBinaryNodes(prev => {
+      const node = prev[memberCode];
+      return node ? { ...prev, [memberCode]: { ...node, isActive: !node.isActive } } : prev;
+    });
+    showToast(language === 'th' ? `เปลี่ยนสถานะสมาชิก ${memberCode} แล้ว` : `Status updated`, 'info');
+  };
+
+  const updateOrderStatus = (orderId: string, newStatus: 'paid' | 'shipping' | 'completed', trackingNo?: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, ...(trackingNo ? { trackingNumber: trackingNo } : {}) } : o));
+    showToast(language === 'th' ? `อัปเดตสถานะคำสั่งซื้อ #${orderId} เป็น ${newStatus} แล้ว` : `Order status updated`, 'success');
+  };
+
+  const calculateNewCommissionCycle = () => {
+    const cycleNum = `2026/10-W${commissionCycles.length + 1}`;
+    const newCycle: CommissionCycle = {
+      id: `cyc_${Date.now()}`,
+      cycleNumber: cycleNum,
+      periodName: `รอบคำนวณอัตโนมัติประจำสัปดาห์ (${cycleNum})`,
+      startDate: '2026-10-08',
+      endDate: '2026-10-14',
+      breakdown: {
+        fastStart: 24000,
+        binaryPairing: 48500,
+        matching: 14200,
+        autoshipPool: 5800,
+        allSaleBonus: 8000
+      },
+      totalGross: 100500,
+      withholdingTax: 3015,
+      transferFee: 30,
+      netPayout: 97455,
+      status: 'pending',
+      payoutDate: '2026-10-17'
+    };
+    setCommissionCycles(prev => [newCycle, ...prev]);
+    showToast(language === 'th' ? `ประมวลผลคำนวณยอดโบนัสรอบใหม่สำเร็จ: ${cycleNum}` : `Commission cycle computed: ${cycleNum}`, 'success');
+  };
+
+  const addProduct = (product: Omit<Product, 'id'>) => {
+    const newProd: Product = { ...product, id: `prod_${Date.now()}` };
+    setProducts(prev => [newProd, ...prev]);
+    showToast(language === 'th' ? `เพิ่มสินค้า "${product.nameTh}" เรียบร้อยแล้ว` : `Product added`, 'success');
+  };
+
+  const updateProductStock = (productId: string, newStock: number) => {
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStock } : p));
+    showToast(language === 'th' ? `อัปเดตสต็อกสินค้าสำเร็จ` : `Stock updated`, 'success');
   };
 
   const logout = () => {
@@ -593,7 +800,27 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRegistrationPreFill,
         isAuthenticated,
         login,
-        logout
+        logout,
+        userRole,
+        switchRole,
+        adminTab,
+        setAdminTab,
+        withdrawalRequests,
+        approveWithdrawal,
+        rejectWithdrawal,
+        compensationSettings,
+        updateCompensationSettings,
+        updateMemberRank,
+        adjustMemberWallet,
+        adjustMemberPv,
+        toggleMemberStatus,
+        updateOrderStatus,
+        calculateNewCommissionCycle,
+        addProduct,
+        updateProductStock,
+        systemBranding,
+        updateSystemBranding,
+        resetSystemBranding
       }}
     >
       {children}

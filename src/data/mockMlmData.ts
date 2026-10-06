@@ -857,3 +857,70 @@ export const ANNOUNCEMENTS: Announcement[] = [
     isImportant: false
   }
 ];
+
+export const INITIAL_WITHDRAWAL_REQUESTS: import('../types/mlm').WithdrawalRequest[] = [
+  {
+    id: 'wdr_101',
+    memberCode: 'TH889502',
+    memberName: 'ณัชชา ภัทรไพศาล',
+    amount: 10000,
+    fee: 30,
+    netAmount: 9970,
+    bankName: 'ธนาคารไทยพาณิชย์ (SCB)',
+    accountNumber: '112-2-90123-4',
+    accountName: 'น.ส. ณัชชา ภัทรไพศาล',
+    requestDate: '2026-10-06 09:30',
+    status: 'pending'
+  },
+  {
+    id: 'wdr_102',
+    memberCode: 'TH890118',
+    memberName: 'ธนากร สุวรรณสิทธิ์',
+    amount: 2500,
+    fee: 30,
+    netAmount: 2470,
+    bankName: 'ธนาคารกรุงเทพ (BBL)',
+    accountNumber: '240-0-78129-0',
+    accountName: 'นาย ธนากร สุวรรณสิทธิ์',
+    requestDate: '2026-10-05 15:45',
+    status: 'pending'
+  },
+  {
+    id: 'wdr_103',
+    memberCode: 'TH889214',
+    memberName: 'กิตติศักดิ์ เจริญสุขสวัสดิ์',
+    amount: 50000,
+    fee: 30,
+    netAmount: 49970,
+    bankName: 'ธนาคารกสิกรไทย (KBANK)',
+    accountNumber: '045-8-91234-5',
+    accountName: 'นาย กิตติศักดิ์ เจริญสุขสวัสดิ์',
+    requestDate: '2026-10-03 11:20',
+    status: 'approved',
+    processedDate: '2026-10-03 14:00'
+  }
+];
+
+export const DEFAULT_COMPENSATION_SETTINGS: import('../types/mlm').CompensationSettings = {
+  fastStartRate: 150,
+  binaryPairingRate: 30,
+  maxDailyCapDiamond: 80000,
+  maxDailyCapGold: 40000,
+  matchingGenerations: 5,
+  autoshipMinPv: 250,
+  withholdingTaxRate: 3,
+  bankTransferFee: 30
+};
+
+export const DEFAULT_BRANDING: import('../types/mlm').SystemBranding = {
+  companyName: 'OMC MLM System',
+  companyNameTh: 'โอเอ็มซี ซิสเต็มส์ (ประเทศไทย)',
+  portalTitle: 'OMC Member Portal',
+  portalTitleTh: 'ระบบสมาชิกนักธุรกิจ OMC',
+  shortCode: 'OMC',
+  domainName: 'demomlm.omc.co.th',
+  logoType: 'text',
+  logoUrl: '',
+  themeColor: 'blue'
+};
+
