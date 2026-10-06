@@ -14,7 +14,9 @@ import {
   AdminTab,
   WithdrawalRequest,
   CompensationSettings,
-  SystemBranding
+  SystemBranding,
+  CompanyBankSettings,
+  BankAccount
 } from '../types/mlm';
 import { 
   PRIMARY_MEMBER, 
@@ -28,7 +30,8 @@ import {
   ANNOUNCEMENTS,
   INITIAL_WITHDRAWAL_REQUESTS,
   DEFAULT_COMPENSATION_SETTINGS,
-  DEFAULT_BRANDING
+  DEFAULT_BRANDING,
+  DEFAULT_BANK_SETTINGS
 } from '../data/mockMlmData';
 
 export type ActiveTab = 
@@ -115,6 +118,12 @@ interface MlmContextType {
   systemBranding: SystemBranding;
   updateSystemBranding: (newBranding: Partial<SystemBranding>) => void;
   resetSystemBranding: () => void;
+  companyBankSettings: CompanyBankSettings;
+  updateCompanyBankSettings: (newSettings: Partial<CompanyBankSettings>) => void;
+  resetCompanyBankSettings: () => void;
+  updateMemberBankAccount: (bank: BankAccount) => void;
+  addMemberBankAccount: (bank: Omit<BankAccount, 'id' | 'isVerified'>) => void;
+  setPrimaryBankAccount: (accountNumber: string) => void;
 }
 
 const MlmContext = createContext<MlmContextType | undefined>(undefined);
@@ -174,6 +183,108 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     showToast(
       language === 'th' ? 'รีเซ็ตชื่อและโลโก้กลับสู่ค่าเริ่มต้นแล้ว' : 'Reset branding to defaults',
+      'info'
+    );
+  };
+
+  // Company Bank & QR Code Top-up Settings
+  const [companyBankSettings, setCompanyBankSettings] = useState<CompanyBankSettings>(() => {
+    try {
+      const saved = localStorage.getItem('omc_bank_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return DEFAULT_BANK_SETTINGS;
+  });
+
+  const updateCompanyBankSettings = (newSettings: Partial<CompanyBankSettings>) => {
+    setCompanyBankSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('omc_bank_settings', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+    showToast(
+      language === 'th' ? 'บันทึกข้อมูลบัญชีธนาคารและ QR เติมเงินเรียบร้อยแล้ว' : 'Bank & QR top-up settings saved successfully',
+      'success'
+    );
+  };
+
+  const resetCompanyBankSettings = () => {
+    setCompanyBankSettings(DEFAULT_BANK_SETTINGS);
+    try {
+      localStorage.removeItem('omc_bank_settings');
+    } catch {
+      // ignore
+    }
+    showToast(
+      language === 'th' ? 'รีเซ็ตข้อมูลธนาคารและ QR กลับสู่ค่าเริ่มต้นแล้ว' : 'Reset bank & QR settings to defaults',
+      'info'
+    );
+  };
+
+  // Member Customer Bank Account Management
+  const updateMemberBankAccount = (newBankAccount: BankAccount) => {
+    setCurrentMember(prev => {
+      const existingAccounts = prev.bankAccounts || [prev.bankAccount];
+      const updatedList = existingAccounts.map(b => 
+        b.accountNumber === newBankAccount.accountNumber ? newBankAccount : b
+      );
+      return {
+        ...prev,
+        bankAccount: newBankAccount,
+        bankAccounts: updatedList
+      };
+    });
+    showToast(
+      language === 'th' ? 'อัปเดตข้อมูลบัญชีธนาคารของคุณเรียบร้อยแล้ว' : 'Your bank account has been updated successfully',
+      'success'
+    );
+  };
+
+  const addMemberBankAccount = (newBank: Omit<BankAccount, 'id' | 'isVerified'>) => {
+    const bankObj: BankAccount = {
+      ...newBank,
+      id: `bnk_${Date.now()}`,
+      isVerified: true,
+      isPrimary: true
+    };
+    setCurrentMember(prev => {
+      const existing = prev.bankAccounts || [prev.bankAccount];
+      const updatedList = [bankObj, ...existing.map(b => ({ ...b, isPrimary: false }))];
+      return {
+        ...prev,
+        bankAccount: bankObj,
+        bankAccounts: updatedList
+      };
+    });
+    showToast(
+      language === 'th' ? `เพิ่มบัญชีธนาคาร ${newBank.bankName} สำเร็จ!` : `Added bank account ${newBank.bankName} successfully!`,
+      'success'
+    );
+  };
+
+  const setPrimaryBankAccount = (accountNumber: string) => {
+    setCurrentMember(prev => {
+      const existing = prev.bankAccounts || [prev.bankAccount];
+      const target = existing.find(b => b.accountNumber === accountNumber);
+      if (!target) return prev;
+      const updatedList = existing.map(b => ({
+        ...b,
+        isPrimary: b.accountNumber === accountNumber
+      }));
+      return {
+        ...prev,
+        bankAccount: { ...target, isPrimary: true },
+        bankAccounts: updatedList
+      };
+    });
+    showToast(
+      language === 'th' ? 'ตั้งเป็นบัญชีหลักสำหรับรับโอนเงินเรียบร้อยแล้ว' : 'Set as primary payout bank account',
       'info'
     );
   };
@@ -820,7 +931,13 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProductStock,
         systemBranding,
         updateSystemBranding,
-        resetSystemBranding
+        resetSystemBranding,
+        companyBankSettings,
+        updateCompanyBankSettings,
+        resetCompanyBankSettings,
+        updateMemberBankAccount,
+        addMemberBankAccount,
+        setPrimaryBankAccount
       }}
     >
       {children}

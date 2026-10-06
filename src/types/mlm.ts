@@ -10,12 +10,15 @@ export type MemberRank =
   | 'Crown Diamond';
 
 export interface BankAccount {
+  id?: string;
   bankName: string;
   bankCode: string;
   accountNumber: string;
   accountName: string;
   branch: string;
   isVerified: boolean;
+  isPrimary?: boolean;
+  bookBankImageUrl?: string;
 }
 
 export interface MemberProfile {
@@ -49,6 +52,7 @@ export interface MemberProfile {
   joinDate: string;
   avatarUrl: string;
   bankAccount: BankAccount;
+  bankAccounts?: BankAccount[];
   kycStatus: 'verified' | 'pending' | 'unverified';
   transactionPin: string;
 }
@@ -233,5 +237,20 @@ export interface SystemBranding {
   logoType: 'text' | 'image';
   logoUrl?: string;
   themeColor: 'blue' | 'indigo' | 'emerald' | 'amber' | 'purple';
+}
+
+export interface CompanyBankSettings {
+  bankName: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName: string;
+  branch: string;
+  promptPayId: string;
+  promptPayType: 'tax_id' | 'phone';
+  qrCodeType: 'generated' | 'custom_image';
+  customQrImageUrl?: string;
+  minTransferAmount: number;
+  minWithdrawAmount: number;
+  transferFee: number;
 }
 

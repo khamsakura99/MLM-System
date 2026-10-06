@@ -10,7 +10,8 @@ import {
   Building2,
   Lock,
   QrCode,
-  RefreshCw
+  RefreshCw,
+  Copy
 } from 'lucide-react';
 import { useMlm } from '../../context/MlmContext';
 
@@ -22,6 +23,9 @@ export const WalletManagementView: React.FC = () => {
     transferWallet, 
     withdrawWallet, 
     transactions,
+    companyBankSettings,
+    systemBranding,
+    setActiveTab,
     showToast 
   } = useMlm();
 
@@ -265,9 +269,18 @@ export const WalletManagementView: React.FC = () => {
           {subTab === 'withdraw' && (
             <form onSubmit={handleExecuteWithdraw} className="max-w-xl mx-auto space-y-4 text-xs">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-semibold text-slate-700 block text-xs">
-                  {language === 'th' ? 'ข้อมูลบัญชีธนาคารรับเงิน (Verified Bank):' : 'Destination Bank Account:'}
-                </span>
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                  <span className="font-semibold text-slate-700 block text-xs">
+                    {language === 'th' ? 'ข้อมูลบัญชีธนาคารรับเงิน (Verified Bank):' : 'Destination Bank Account:'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('profile_kyc')}
+                    className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{language === 'th' ? '+ แก้ไข/เปลี่ยนบัญชีธนาคาร' : '+ Change / Add Bank'}</span>
+                  </button>
+                </div>
                 <div className="text-slate-900 font-bold text-sm">
                   {currentMember.bankAccount.bankName}
                 </div>
@@ -293,8 +306,8 @@ export const WalletManagementView: React.FC = () => {
                   required
                 />
                 <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>{language === 'th' ? 'ถอนขั้นต่ำ 300 บาท' : 'Min 300 THB'}</span>
-                  <span>{language === 'th' ? 'ค่าธรรมเนียมโอนธนาคาร: 30 บาท' : 'Bank fee: 30 THB'}</span>
+                  <span>{language === 'th' ? `ถอนขั้นต่ำ ${companyBankSettings.minWithdrawAmount.toLocaleString()} บาท` : `Min ${companyBankSettings.minWithdrawAmount.toLocaleString()} THB`}</span>
+                  <span>{language === 'th' ? `ค่าธรรมเนียมโอนธนาคาร: ${companyBankSettings.transferFee} บาท` : `Bank fee: ${companyBankSettings.transferFee} THB`}</span>
                 </div>
               </div>
 
@@ -327,10 +340,12 @@ export const WalletManagementView: React.FC = () => {
 
           {/* TAB 3: DEPOSIT VIA QR */}
           {subTab === 'deposit' && (
-            <div className="max-w-md mx-auto text-center space-y-4 text-xs">
+            <div className="max-w-md mx-auto space-y-4 text-xs">
+              
+              {/* Deposit Amount Input */}
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">
-                  {language === 'th' ? 'ระบุจำนวนเงินที่ต้องการเติม (บาท):' : 'Top-up Amount (THB):'}
+                  {language === 'th' ? 'ระบุจำนวนเงินที่ต้องการเติมเข้ากระเป๋า (บาท):' : 'Top-up Amount (THB):'}
                 </label>
                 <input
                   type="number"
@@ -340,42 +355,131 @@ export const WalletManagementView: React.FC = () => {
                 />
               </div>
 
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className="w-40 h-40 bg-white border border-slate-300 rounded-lg mx-auto flex items-center justify-center p-2 shadow-inner">
-                  {/* Promptpay SVG Mock */}
-                  <svg className="w-36 h-36" viewBox="0 0 100 100" fill="currentColor">
-                    <rect x="5" y="5" width="25" height="25" fill="#0f172a" />
-                    <rect x="9" y="9" width="17" height="17" fill="#ffffff" />
-                    <rect x="13" y="13" width="9" height="9" fill="#0f172a" />
-
-                    <rect x="70" y="5" width="25" height="25" fill="#0f172a" />
-                    <rect x="74" y="9" width="17" height="17" fill="#ffffff" />
-                    <rect x="78" y="13" width="9" height="9" fill="#0f172a" />
-
-                    <rect x="5" y="70" width="25" height="25" fill="#0f172a" />
-                    <rect x="9" y="74" width="17" height="17" fill="#ffffff" />
-                    <rect x="13" y="78" width="9" height="9" fill="#0f172a" />
-
-                    <rect x="36" y="15" width="8" height="8" fill="#1e40af" />
-                    <rect x="50" y="25" width="8" height="8" fill="#1e40af" />
-                    <rect x="40" y="45" width="20" height="20" fill="#1e40af" />
-                  </svg>
+              {/* Company Bank Account Details Card */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-left">
+                <div className="flex items-center justify-between text-slate-500 text-[11px] pb-1 border-b border-slate-200">
+                  <span className="font-semibold text-slate-700">
+                    {language === 'th' ? 'บัญชีธนาคารบริษัทสำหรับเติมเงิน:' : 'Company Official Bank Account:'}
+                  </span>
+                  <span className="font-mono text-emerald-700 font-bold">{companyBankSettings.bankCode}</span>
                 </div>
 
-                <div className="text-[11px] text-slate-500">
-                  {language === 'th' ? 'สแกน QR PromptPay บัญชี บจก. ออนไลน์ มาร์เก็ตติ้ง คอมมิวนิเคชั่น' : 'Scan via Thai Banking Apps (PromptPay QR)'}
+                <div className="font-bold text-slate-900 text-sm">
+                  {companyBankSettings.bankName}
+                </div>
+
+                <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">{language === 'th' ? 'เลขที่บัญชี / พร้อมเพย์:' : 'Account / PromptPay:'}</span>
+                    <span className="font-mono text-base font-bold text-slate-900">{companyBankSettings.accountNumber}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(companyBankSettings.accountNumber.replace(/-/g, ''));
+                      showToast(language === 'th' ? 'คัดลอกเลขที่บัญชีแล้ว' : 'Copied account number', 'info');
+                    }}
+                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 transition-colors"
+                    title="คัดลอกเลขบัญชี"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-slate-600 space-y-0.5 pt-1">
+                  <div><strong className="text-slate-700">{language === 'th' ? 'ชื่อบัญชี:' : 'Account Name:'}</strong> {companyBankSettings.accountName}</div>
+                  <div><strong className="text-slate-700">{language === 'th' ? 'PromptPay ID:' : 'PromptPay:'}</strong> <span className="font-mono">{companyBankSettings.promptPayId}</span> ({companyBankSettings.promptPayType === 'tax_id' ? (language === 'th' ? 'เลขนิติบุคคล 13 หลัก' : 'Corporate Tax ID') : (language === 'th' ? 'เบอร์โทรศัพท์' : 'Mobile Phone')})</div>
                 </div>
               </div>
 
+              {/* QR Code Presentation Box */}
+              <div className="p-5 bg-gradient-to-b from-blue-900 to-indigo-950 text-white border border-blue-800 rounded-2xl shadow-md text-center space-y-3">
+                
+                {/* Official PromptPay Header Bar */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[11px] font-semibold text-blue-200 border border-white/20">
+                  <QrCode className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Thai QR Payment · PromptPay</span>
+                </div>
+
+                <div className="bg-white p-3 rounded-xl mx-auto w-48 h-48 flex items-center justify-center shadow-lg">
+                  {companyBankSettings.qrCodeType === 'custom_image' && companyBankSettings.customQrImageUrl ? (
+                    <img
+                      src={companyBankSettings.customQrImageUrl}
+                      alt="Company Custom Top up QR"
+                      className="w-44 h-44 object-contain rounded"
+                    />
+                  ) : (
+                    <div className="relative w-44 h-44 flex flex-col items-center justify-center">
+                      {/* High-res Styled Promptpay SVG */}
+                      <svg className="w-40 h-40" viewBox="0 0 100 100" fill="currentColor">
+                        <rect x="5" y="5" width="26" height="26" fill="#0f172a" />
+                        <rect x="9" y="9" width="18" height="18" fill="#ffffff" />
+                        <rect x="13" y="13" width="10" height="10" fill="#0f172a" />
+
+                        <rect x="69" y="5" width="26" height="26" fill="#0f172a" />
+                        <rect x="73" y="9" width="18" height="18" fill="#ffffff" />
+                        <rect x="77" y="13" width="10" height="10" fill="#0f172a" />
+
+                        <rect x="5" y="69" width="26" height="26" fill="#0f172a" />
+                        <rect x="9" y="73" width="18" height="18" fill="#ffffff" />
+                        <rect x="13" y="77" width="10" height="10" fill="#0f172a" />
+
+                        <rect x="36" y="10" width="8" height="8" fill="#1e40af" />
+                        <rect x="50" y="20" width="8" height="8" fill="#1e40af" />
+                        <rect x="42" y="38" width="16" height="16" fill="#1e40af" />
+                        <rect x="68" y="44" width="8" height="8" fill="#0f172a" />
+                        <rect x="40" y="68" width="12" height="12" fill="#0f172a" />
+                        <rect x="65" y="68" width="8" height="8" fill="#1e40af" />
+                        <rect x="80" y="68" width="8" height="8" fill="#0f172a" />
+                        <rect x="68" y="80" width="8" height="8" fill="#0f172a" />
+                        <rect x="80" y="80" width="8" height="8" fill="#1e40af" />
+                      </svg>
+                      {/* Center PromptPay badge */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="px-2 py-0.5 rounded bg-blue-900 text-white font-mono text-[9px] font-bold shadow-md border border-white">
+                          THAI QR
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="font-mono text-lg font-bold text-emerald-400">
+                    ฿{parseFloat(depositAmount || '0').toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[11px] text-blue-200 mt-0.5">
+                    {companyBankSettings.accountName}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                    PromptPay: {companyBankSettings.promptPayId}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Simulation Completion Button */}
               <button
                 type="button"
                 onClick={() => {
-                  showToast(language === 'th' ? 'ระบบจำลองการเติมเงินเข้า E-Wallet สำเร็จ!' : 'Simulated deposit successful', 'success');
+                  const amt = parseFloat(depositAmount);
+                  if (isNaN(amt) || amt <= 0) {
+                    showToast(language === 'th' ? 'กรุณาระบุจำนวนเงินที่ถูกต้อง' : 'Invalid amount', 'error');
+                    return;
+                  }
+                  showToast(
+                    language === 'th' 
+                      ? `ระบบจำลองการเติมเงิน ฿${amt.toLocaleString()} เข้า E-Wallet สำเร็จเรียบร้อยแล้ว!` 
+                      : `Simulated deposit of ฿${amt.toLocaleString()} credited to E-Wallet`, 
+                    'success'
+                  );
                 }}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-colors"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
               >
-                {language === 'th' ? 'จำลองการแจ้งโอนสำเร็จ (+เงินเข้ากระเป๋า)' : 'Simulate Deposit Completion'}
+                <Check className="w-4 h-4" />
+                <span>{language === 'th' ? 'จำลองการแจ้งโอนสำเร็จ (+เงินเข้ากระเป๋า)' : 'Simulate Deposit Completion'}</span>
               </button>
+
             </div>
           )}
 

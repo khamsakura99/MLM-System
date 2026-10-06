@@ -924,3 +924,19 @@ export const DEFAULT_BRANDING: import('../types/mlm').SystemBranding = {
   themeColor: 'blue'
 };
 
+export const DEFAULT_BANK_SETTINGS: import('../types/mlm').CompanyBankSettings = {
+  bankName: 'ธนาคารกสิกรไทย (Kasikornbank)',
+  bankCode: 'KBANK',
+  accountNumber: '045-8-91234-5',
+  accountName: 'บริษัท โอเอ็มซี ซิสเต็มส์ จำกัด',
+  branch: 'สาขา รัชโยธิน',
+  promptPayId: '0105562018899',
+  promptPayType: 'tax_id',
+  qrCodeType: 'generated',
+  customQrImageUrl: '',
+  minTransferAmount: 100,
+  minWithdrawAmount: 300,
+  transferFee: 30
+};
+
+
