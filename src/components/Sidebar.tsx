@@ -13,7 +13,8 @@ import {
   UserCheck, 
   HelpCircle,
   X,
-  Share2
+  Share2,
+  LogOut
 } from 'lucide-react';
 import { useMlm, ActiveTab } from '../context/MlmContext';
 
@@ -23,7 +24,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { language, activeTab, setActiveTab, currentMember } = useMlm();
+  const { language, activeTab, setActiveTab, currentMember, logout } = useMlm();
 
   const navGroups: {
     titleTh: string;
@@ -245,6 +246,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
             <span className="font-mono text-slate-300 truncate max-w-[120px]">{currentMember.sponsorCode}</span>
           </div>
           <p className="truncate text-slate-300">{currentMember.sponsorName}</p>
+
+          <button
+            onClick={() => {
+              onCloseMobile();
+              logout();
+            }}
+            className="mt-2.5 w-full py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-300 hover:text-white transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5 text-red-400" />
+            <span>{language === 'th' ? 'ออกจากระบบ (Log Out)' : 'Log Out'}</span>
+          </button>
+
           <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
             <span>OMC MLM v4.2 Demo</span>
             <span className="text-emerald-400 font-medium">Online</span>

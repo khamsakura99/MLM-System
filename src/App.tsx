@@ -14,17 +14,27 @@ import { WalletManagementView } from './components/views/WalletManagementView';
 import { CommissionLedgerView } from './components/views/CommissionLedgerView';
 import { RegistrationView } from './components/views/RegistrationView';
 import { ProfileKycView } from './components/views/ProfileKycView';
+import { LoginView } from './components/views/LoginView';
 import { CartDrawer } from './components/modals/CartDrawer';
 import { QuickWalletModal } from './components/modals/QuickWalletModal';
 import { CommissionSlipModal } from './components/modals/CommissionSlipModal';
 import { CommissionCycle } from './types/mlm';
 
 const MainLayout: React.FC = () => {
-  const { activeTab, setActiveTab, currentMember, language } = useMlm();
+  const { activeTab, setActiveTab, currentMember, language, isAuthenticated } = useMlm();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [slipModalCycle, setSlipModalCycle] = useState<CommissionCycle | null>(null);
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginView />
+        <Toasts />
+      </>
+    );
+  }
 
   const getBreadcrumbTitle = (tab: ActiveTab) => {
     switch (tab) {

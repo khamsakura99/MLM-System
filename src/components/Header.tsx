@@ -9,7 +9,8 @@ import {
   UserCheck, 
   ExternalLink,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { useMlm } from '../context/MlmContext';
 import { ALTERNATIVE_MEMBERS } from '../data/mockMlmData';
@@ -32,7 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
     switchMember, 
     cart, 
     announcements,
-    setActiveTab
+    setActiveTab,
+    logout
   } = useMlm();
 
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
@@ -266,7 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
                     ))}
                   </div>
 
-                  <div className="border-t border-slate-100 pt-1 mt-1">
+                  <div className="border-t border-slate-100 pt-1 mt-1 space-y-0.5">
                     <button
                       onClick={() => {
                         setActiveTab('profile_kyc');
@@ -277,10 +279,30 @@ export const Header: React.FC<HeaderProps> = ({
                       <UserCheck className="w-3.5 h-3.5 text-blue-600" />
                       <span>{language === 'th' ? 'จัดการข้อมูลส่วนตัว & KYC' : 'Profile & KYC'}</span>
                     </button>
+
+                    <button
+                      onClick={() => {
+                        setShowMemberDropdown(false);
+                        logout();
+                      }}
+                      className="w-full text-left p-2 rounded hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-red-600" />
+                      <span className="font-semibold">{language === 'th' ? 'ออกจากระบบ (Log Out)' : 'Log Out'}</span>
+                    </button>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Quick Logout Header Icon Button */}
+            <button
+              onClick={logout}
+              className="hidden sm:flex p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors cursor-pointer"
+              title={language === 'th' ? 'ออกจากระบบ' : 'Log Out'}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
 
           </div>
 

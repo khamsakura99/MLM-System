@@ -84,12 +84,16 @@ interface MlmContextType {
   announcements: typeof ANNOUNCEMENTS;
   registrationPreFill: { uplineCode?: string; position?: 'L' | 'R' } | null;
   setRegistrationPreFill: (data: { uplineCode?: string; position?: 'L' | 'R' } | null) => void;
+  isAuthenticated: boolean;
+  login: (memberCode: string, password?: string) => { success: boolean; message: string };
+  logout: () => void;
 }
 
 const MlmContext = createContext<MlmContextType | undefined>(undefined);
 
 export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('th');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [currentMember, setCurrentMember] = useState<MemberProfile>(PRIMARY_MEMBER);
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [binaryNodes, setBinaryNodes] = useState<Record<string, BinaryNode>>(INITIAL_BINARY_NODES);
@@ -108,6 +112,99 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4000);
+  };
+
+  const login = (memberCode: string, password = ''): { success: boolean; message: string } => {
+    const cleanCode = memberCode.trim().toUpperCase();
+    if (!cleanCode) {
+      return { 
+        success: false, 
+        message: language === 'th' ? 'กรุณากรอกรหัสสมาชิก' : 'Please enter member code' 
+      };
+    }
+
+    // Find in alternative members list
+    const foundAlt = ALTERNATIVE_MEMBERS.find(m => m.memberCode.toUpperCase() === cleanCode);
+    if (foundAlt) {
+      setCurrentMember(foundAlt);
+      setIsAuthenticated(true);
+      setActiveTab('dashboard');
+      showToast(
+        language === 'th'
+          ? `ยินดีต้อนรับเข้าสู่ระบบ คุณ${foundAlt.fullName}`
+          : `Welcome, ${foundAlt.fullName}`,
+        'success'
+      );
+      return { success: true, message: 'Login successful' };
+    }
+
+    // Check if member exists in binary nodes (e.g. newly registered downline)
+    const foundNode = Object.values(binaryNodes).find(n => n.memberCode.toUpperCase() === cleanCode);
+    if (foundNode) {
+      const generatedProfile: MemberProfile = {
+        id: `usr_${foundNode.memberCode}`,
+        memberCode: foundNode.memberCode,
+        fullName: foundNode.name,
+        idCardNumber: '1-1020-00999-11-2',
+        phone: '089-999-8888',
+        email: `${foundNode.memberCode.toLowerCase()}@omc.th`,
+        address: '99/1 ถ.พหลโยธิน แขวงลาดยาว เขตจตุจักร',
+        province: 'กรุงเทพมหานคร',
+        postcode: '10900',
+        rank: foundNode.rank,
+        rankBadgeColor: 'from-blue-600 to-indigo-600',
+        sponsorCode: foundNode.sponsorCode,
+        sponsorName: foundNode.sponsorName,
+        uplineCode: foundNode.sponsorCode,
+        uplineName: foundNode.sponsorName,
+        position: foundNode.position === 'ROOT' ? 'L' : foundNode.position,
+        personalPv: foundNode.personalPv,
+        accumulatedPv: foundNode.accumulatedPv,
+        leftLegPv: foundNode.leftPv,
+        rightLegPv: foundNode.rightPv,
+        leftLegMembers: foundNode.leftMembers,
+        rightLegMembers: foundNode.rightMembers,
+        walletBalance: 5000,
+        totalEarnings: 15000,
+        autoshipStatus: 'active',
+        autoshipExpireDate: '2026-11-30',
+        joinDate: foundNode.joinDate,
+        avatarUrl: '/src/assets/images/mlm_avatar_member_1791310697478.jpg',
+        bankAccount: {
+          bankName: 'ธนาคารกสิกรไทย (KBANK)',
+          bankCode: 'KBANK',
+          accountNumber: '110-2-33456-7',
+          accountName: foundNode.name,
+          branch: 'สาขา สยามสแควร์',
+          isVerified: true
+        },
+        kycStatus: 'verified',
+        transactionPin: '123456'
+      };
+      setCurrentMember(generatedProfile);
+      setIsAuthenticated(true);
+      setActiveTab('dashboard');
+      showToast(
+        language === 'th'
+          ? `ยินดีต้อนรับเข้าสู่ระบบ คุณ${foundNode.name}`
+          : `Welcome, ${foundNode.name}`,
+        'success'
+      );
+      return { success: true, message: 'Login successful' };
+    }
+
+    return {
+      success: false,
+      message: language === 'th' ? 'ไม่พบรหัสสมาชิกนี้ในระบบ' : 'Invalid member code'
+    };
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    showToast(
+      language === 'th' ? 'ออกจากระบบเรียบร้อยแล้ว' : 'Logged out successfully',
+      'info'
+    );
   };
 
   const switchMember = (memberId: string) => {
@@ -493,7 +590,10 @@ export const MlmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast,
         announcements: ANNOUNCEMENTS,
         registrationPreFill,
-        setRegistrationPreFill
+        setRegistrationPreFill,
+        isAuthenticated,
+        login,
+        logout
       }}
     >
       {children}
